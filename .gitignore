@@ -1,0 +1,11 @@
+# User options
+*.suo
+*.csproj.user
+
+# Compiled Stuff
+*/bin/*
+*/obj/*
+
+/gifs/
+/mode2/
+/bin/
