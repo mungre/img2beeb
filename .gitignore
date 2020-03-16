@@ -3,9 +3,8 @@
 *.csproj.user
 
 # Compiled Stuff
-*/bin/*
-*/obj/*
+/bin/
+/obj/
 
 /gifs/
 /mode2/
-/bin/

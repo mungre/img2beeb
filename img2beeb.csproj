@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Version>0.2.22.0</Version>
+    <Authors>Charles Reilly</Authors>
+    <Product>img2beeb</Product>
+    <PackageId>img2beeb</PackageId>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Description>Convert animated GIFs for display on a BBC Micro</Description>
+    <Copyright>Copyright © Charles Reilly 2020</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0007" />
+  </ItemGroup>
+
+</Project>

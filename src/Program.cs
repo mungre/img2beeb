@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
- 
+
  */
 
 using System;
@@ -23,24 +23,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Formats.Gif;
 
 namespace img2beeb
 {
     class Program
     {
-        static BitmapPalette beebPalette = new BitmapPalette(new Color[] {
-                Color.FromRgb(0, 0, 0),
-                Color.FromRgb(255, 0, 0),
-                Color.FromRgb(0, 255, 0),
-                Color.FromRgb(255, 255, 0),
-                Color.FromRgb(0, 0, 255),
-                Color.FromRgb(255, 0, 255),
-                Color.FromRgb(0, 255, 255),
-                Color.FromRgb(255, 255, 255)
-            });
-
         static byte[] mode2ColourTable = new byte[] {
             0x00, 0x03, 0x0C, 0x0F,
             0x30, 0x33, 0x3C, 0x3F,
@@ -56,14 +47,14 @@ namespace img2beeb
 
             DateTime modificationTime = File.GetLastWriteTimeUtc(sourceFile);
 
-            GifBitmapDecoder gif = new GifBitmapDecoder(new System.Uri(sourceFile), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            Image<Rgba32> gif = Image.Load<Rgba32>(sourceFile);
 
             int height = 256;
             int width = 160;
             int frameCount = gif.Frames.Count;
             // Currently use ints to hold a list of pixel colours for a pixel.  Each takes three bits,
             // so can only do 10.  Easily extended with a long though.
-            Debug.Assert(frameCount <= 10); 
+            Debug.Assert(frameCount <= 10);
             if (frameCount > 10)
             {
                 throw new ApplicationException("The source image has more than 10 frames");
@@ -76,11 +67,10 @@ namespace img2beeb
             byte[, ,] frames = new byte[frameCount, width, height];
 
             int frameIndex = 0;
-            foreach (BitmapFrame frame in gif.Frames)
+            foreach (ImageFrame<Rgba32> frame in gif.Frames)
             {
                 Debug.Assert(frame.Width == width * 4);
                 Debug.Assert(frame.Height == height * 2);
-                Debug.Assert(frame.Format == PixelFormats.Indexed8);
                 if (frame.Width != width * 4)
                 {
                     throw new ApplicationException(string.Format("The source image is not {0} pixels wide", width * 4));
@@ -89,30 +79,24 @@ namespace img2beeb
                 {
                     throw new ApplicationException(string.Format("The source image is not {0} pixels high", height * 2));
                 }
-                if (frame.Format != PixelFormats.Indexed8)
-                {
-                    throw new ApplicationException("The source image is not in 8-bit indexed colour");
-                }
-                int sourceStride = ((int)frame.Width + 3) & ~3;
-                byte[] source = new byte[sourceStride * (int)frame.Height];
-                frame.CopyPixels(source, sourceStride, 0);
 
                 for (int y = 0; y != height; ++y)
                 {
                     for (int x = 0; x != width; ++x)
                     {
-                        int pixelOffset = 4 * x + 2 * y * sourceStride;
-                        byte colourIndex = source[pixelOffset];
+                        int xs = 4 * x;
+                        int ys = 2 * y;
+                        Color c = frame[xs, ys];
                         for (int y0 = 0; y0 != 2; ++y0)
                         {
                             for (int x0 = 0; x0 != 4; ++x0)
                             {
-                                byte colourIndex2 = source[pixelOffset + x0 + y0 * sourceStride];
-                                Debug.Assert(colourIndex2 == colourIndex);
+                                Color c2 = frame[xs + x0, ys + y0];
+                                Debug.Assert(c == c2);
                             }
                         }
-                        Color c = frame.Palette.Colors[colourIndex];
-                        frames[frameIndex, x, y] = (byte)BeebColour(128, c.R, c.G, c.B);
+                        Rgba32 p = c.ToPixel<Rgba32>();
+                        frames[frameIndex, x, y] = (byte)BeebColour(128, p.R, p.G, p.B);
                     }
                 }
                 ++frameIndex;
@@ -218,15 +202,15 @@ namespace img2beeb
                     palette[index++] = (byte)((colourCyclesSorted[colour] >> (3 * (frameCount - frame - 1))) & 0x07);
                 }
                 // Get frame delay in centiseconds
-                byte frameDelay = (byte)(ushort)((BitmapMetadata)gif.Frames[frame].Metadata).GetQuery("/grctlext/Delay");
+                GifFrameMetadata fmd = gif.Frames[frame].Metadata.GetFormatMetadata(GifFormat.Instance);
+                int frameDelay = fmd.FrameDelay;
                 // The BASIC program subtracts 2 to account for its own sluggishness
-                Debug.Assert(frameDelay >= 3);
-                if (frameDelay < 3)
+                Debug.Assert(frameDelay >= 3 && frameDelay < 256);
+                if (frameDelay < 3 || frameDelay >= 256)
                 {
-                    throw new ApplicationException("The frame delay is too short");
+                    throw new ApplicationException("The frame delay is too short (or too long!)");
                 }
-                palette[index++] = frameDelay;
-
+                palette[index++] = (byte)frameDelay;
             }
 
             using (FileStream fs = new FileStream(newPath, FileMode.CreateNew, FileAccess.Write))

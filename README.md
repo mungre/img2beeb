@@ -4,21 +4,25 @@ Convert animated gifs into BBC Micro palette animations.
 
 This is only of any use when the animated gif was created from a BBC Micro palette animation in the first place.
 
-The code is written in C# using VS2010, but a batch file is also provided to build the application in the absence of Visual Studio.
+The code is written in C# using .NET Core and SixLabors.ImageSharp.  It has been tested on Windows but should also work on Linux and Mac.
 
 ## Conversion
+
+Ensure that you have [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) installed.
 
 Open a command prompt.  Type
 
     git clone https://github.com/mungre/img2beeb
     cd img2beeb
-    build
+    dotnet build
+    mkdir gifs
+    mkdir mode2
 
 Copy animated gifs into the gifs subdirectory.  Execute
 
-    build
+    dotnet run
 
-for a second time.  The mode2 directory should contain the results.
+The mode2 directory should contain the results.
 
 ## Animation
 
