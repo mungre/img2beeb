@@ -67,6 +67,7 @@ namespace img2beeb
             byte[, ,] frames = new byte[frameCount, width, height];
 
             int frameIndex = 0;
+            bool patchWarning = false;
             foreach (ImageFrame<Rgba32> frame in gif.Frames)
             {
                 Debug.Assert(frame.Width == width * 4);
@@ -86,22 +87,33 @@ namespace img2beeb
                     {
                         int xs = 4 * x;
                         int ys = 2 * y;
+                        int r = 0;
+                        int g = 0;
+                        int b = 0;
                         Color c = frame[xs, ys];
                         for (int y0 = 0; y0 != 2; ++y0)
                         {
                             for (int x0 = 0; x0 != 4; ++x0)
                             {
                                 Color c2 = frame[xs + x0, ys + y0];
+                                Rgba32 p = c2.ToPixel<Rgba32>();
                                 Debug.Assert(c == c2);
+                                if (c2 != c) {
+                                    patchWarning = true;
+                                }
+                                r += p.R;
+                                g += p.G;
+                                b += p.B;
                             }
                         }
-                        Rgba32 p = c.ToPixel<Rgba32>();
-                        frames[frameIndex, x, y] = (byte)BeebColour(128, p.R, p.G, p.B);
+                        frames[frameIndex, x, y] = (byte)BeebColour(8 * 128, r, g, b);
                     }
                 }
                 ++frameIndex;
             }
-
+            if (patchWarning) {
+                Console.WriteLine("img2beeb: WARNING: A 2x4 patch contains varying colours; is this a MODE2 image?");
+            }
             // Calculate vector of pixel colours across frames;
             // remember each unique vector.
             for (int y = 0; y != height; ++y)
@@ -257,7 +269,7 @@ namespace img2beeb
             }
             catch (ApplicationException e)
             {
-                Console.Error.WriteLine("img2beeb: {0}", e.Message);
+                Console.Error.WriteLine("img2beeb: ERROR: {0}", e.Message);
             }
         }
     }
