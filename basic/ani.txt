@@ -6,24 +6,8 @@ HIMEM=HIMEM-&100
 VDU 23,1,0;0;0;0;
 FORC%=0TO15:VDU19,C%,0;0;:NEXT
 OSCLI"LOAD "+P$+" "+STR$~(HIMEM)
-T%=?&2F10-1
-S%=?&2F11
-V%=S%+?&2F12-1
-M%=&2F13
-FORC%=0TOS%-1
-VDU19,C%,?M%,0,0,0
-M%=M%+1
-NEXT
-N%=M%
-REPEAT
-FORF%=0TOT%
-FORC%=S%TOV%
-VDU19,C%,?M%,0,0,0
-M%=M%+1
-NEXT
-D%=?M%
-M%=M%+1
-K%=INKEY(D%-2):IFK%=-1NEXT:M%=N%:UNTIL0
+PROCasm
+CALLani
 CLS:RUN
 DEFPROCmenu
 *DIR P
@@ -51,4 +35,56 @@ NEXT
 P$=$(M%+128)
 P%=P%+?P%+1
 A%=A%+1
+ENDPROC
+DEFPROCasm
+H%=HIMEM
+T%=H%?&10
+S%=H%?&11
+V%=H%?&12
+M%=H%+&13
+DIM Z% 100
+FOR W%=0TO2STEP2
+P%=Z%
+[OPTW%
+.ani
+LDY #(S%-1) AND 255
+BMI mloop
+.sloop
+LDX M%,Y
+JSR pal
+DEY
+BPL sloop
+.mloop
+LDA #T%:STA &70
+LDA #0:STA &71
+.floop
+LDY #S%
+.cloop
+JSR next
+JSR pal
+INY
+CPY #S%+V%
+BNE cloop
+JSR next
+LDA#&81:LDY #&00:JSR&FFF4
+CPY#&FF
+BNE quit
+DEC &70
+BNE floop
+BEQ mloop
+.quit
+RTS
+.pal
+LDA #&13:JSR&FFEE
+TYA:JSR &FFEE
+TXA:JSR &FFEE
+LDA #&00:JSR &FFEE:JSR &FFEE:JMP &FFEE
+.next
+LDX &71
+INC &71
+LDA M%+S%,X
+TAX
+RTS
+]
+NEXT
 ENDPROC
