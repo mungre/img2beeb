@@ -217,10 +217,10 @@ namespace img2beeb
                 GifFrameMetadata fmd = gif.Frames[frame].Metadata.GetFormatMetadata(GifFormat.Instance);
                 int frameDelay = fmd.FrameDelay;
                 // The BASIC program subtracts 2 to account for its own sluggishness
-                Debug.Assert(frameDelay >= 3 && frameDelay < 256);
-                if (frameDelay < 3 || frameDelay >= 256)
+                Debug.Assert(frameDelay >= 0 && frameDelay < 256);
+                if (frameDelay >= 256)
                 {
-                    throw new ApplicationException("The frame delay is too short (or too long!)");
+                    throw new ApplicationException("The frame delay is too long!");
                 }
                 palette[index++] = (byte)frameDelay;
             }
