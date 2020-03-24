@@ -216,7 +216,6 @@ namespace img2beeb
                 // Get frame delay in centiseconds
                 GifFrameMetadata fmd = gif.Frames[frame].Metadata.GetFormatMetadata(GifFormat.Instance);
                 int frameDelay = fmd.FrameDelay;
-                // The BASIC program subtracts 2 to account for its own sluggishness
                 Debug.Assert(frameDelay >= 0 && frameDelay < 256);
                 if (frameDelay >= 256)
                 {
